@@ -1,13 +1,16 @@
 package service.endpoint;
 
 import org.glassfish.jersey.client.ClientConfig;
+import service.models.User;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -30,18 +33,34 @@ public class RentalService {
         return client.target(baseUri);
     }
 
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String index() {
+    // unprotected routes
+    @POST
+    @Path("register")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response register(@FormParam("email") String email, @FormParam("name") String name,
+                             @FormParam("role") String role, @FormParam("password") String password) {
 
-        Builder reqBuilder1 = this.client.path("user/api/").request().accept(MediaType.TEXT_PLAIN);
-        Response res1 = reqBuilder1.get();
+        Builder reqBuilder1 = this.client.path("user/api/register")
+                .request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON);
+        Response res1 = reqBuilder1.post(Entity.entity(new User(email, name, password, role),
+                MediaType.APPLICATION_JSON));
         String hello = res1.readEntity(String.class);
-
-        Builder reqBuilder2 = this.client.path("room/api/").request().accept(MediaType.TEXT_PLAIN);
-        Response res2 = reqBuilder2.get();
-        String world = res2.readEntity(String.class);
-
-        return hello + " " + world;
+        return Response.status(201).entity(hello).type(MediaType.TEXT_PLAIN).build();
     }
+
+    @POST
+    @Path("authenticate")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response authenticate(@FormParam("email") String email, @FormParam("password") String password) {
+
+        Form form = new Form();
+        form.param("email", email);
+        form.param("password", password);
+        Builder reqBuilder1 = this.client.path("user/api/authenticate").request(MediaType.TEXT_PLAIN);
+        Response res1 = reqBuilder1.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        String hello = res1.readEntity(String.class);
+        return Response.status(201).entity(hello).type(MediaType.TEXT_PLAIN).build();
+    }
+
+    //protected routes
 }
