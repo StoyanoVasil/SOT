@@ -1,7 +1,7 @@
 package service.endpoint;
 
 import org.glassfish.jersey.client.ClientConfig;
-import service.models.User;
+import service.models.*;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
@@ -34,6 +34,7 @@ public class RentalService {
     }
 
     // unprotected routes
+    //TODO: make checks and return appropriate messages
     @POST
     @Path("register")
     @Produces(MediaType.APPLICATION_JSON)
@@ -63,4 +64,15 @@ public class RentalService {
     }
 
     //protected routes
+    @POST
+    @Path("new/room")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response newRoom(@FormParam("address") String address,
+                            @FormParam("rent") int rent) {
+
+        //TODO: get landlord id from token
+        Room room = new Room(address, "test", rent);
+        Builder reqBuilder1 = this.client.path("room/api/new").request(MediaType.APPLICATION_JSON);
+        return reqBuilder1.post(Entity.entity(room, MediaType.APPLICATION_JSON));
+    }
 }
