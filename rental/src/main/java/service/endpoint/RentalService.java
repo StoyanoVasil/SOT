@@ -42,10 +42,13 @@ public class RentalService {
     }
 
     private DecodedJWT verifyToken(String token) {
+
         return verifier.verify(token);
     }
 
-    private String getTokenId(String token) { return verifyToken(token).getKeyId(); }
+    private String getTokenId(String token) {
+
+        return verifyToken(token).getKeyId(); }
 
     // unprotected routes
     @POST
@@ -87,7 +90,7 @@ public class RentalService {
                     .header("Authorization", token);
             return reqBuilder1.get();
         } catch (JWTVerificationException e) {
-            return Response.status(401).build();
+            return Response.status(401).entity(e).build();
         }
     }
 
