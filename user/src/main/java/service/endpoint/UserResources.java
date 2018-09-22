@@ -1,5 +1,6 @@
 package service.endpoint;
 
+import com.auth0.jwt.JWT;
 import org.glassfish.jersey.server.monitoring.ResponseStatistics;
 import service.models.User;
 
@@ -19,6 +20,12 @@ public class UserResources {
     public UserResources() {
         this.users = new ArrayList<>();
         this.users.add(new User("admin@ad.min", "admin", "admin", "admin"));
+    }
+
+    private boolean isAdmin(String token) {
+
+        String permission = JWT.decode(token).getSubject();
+        return permission.equals("admin");
     }
 
     private User userExists(String email) {
@@ -61,38 +68,44 @@ public class UserResources {
     @GET
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUsers() {
+    public Response getUsers(@HeaderParam("Authorization") String token) {
 
-        //TODO: check if admin
-        return Response.status(200).entity(this.users).type(MediaType.APPLICATION_JSON).build();
+        if(isAdmin(token)) {
+            return Response.status(200).entity(this.users).type(MediaType.APPLICATION_JSON).build();
+        }
+        return Response.status(401).build();
     }
 
     @GET
     @Path("user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUser(@PathParam("id") String id) {
+    public Response getUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        //TODO: check if admin
-        for (User user : this.users) {
-            if (user.getId().equals(id)) {
-                return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
+        if (isAdmin(token)) {
+            for (User user : this.users) {
+                if (user.getId().equals(id)) {
+                    return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
+                }
             }
+            return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
         }
-        return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+        return Response.status(401).build();
     }
 
     @DELETE
     @Path("remove/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response removeUser(@PathParam("id") String id) {
+    public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        //TODO: check if admin
-        for (User user : this.users) {
-            if (user.getId().equals(id)) {
-                this.users.remove(user);
-                return Response.status(204).build();
+        if (isAdmin(token)) {
+            for (User user : this.users) {
+                if (user.getId().equals(id)) {
+                    this.users.remove(user);
+                    return Response.status(204).build();
+                }
             }
+            return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
         }
-        return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+        return Response.status(401).build();
     }
 }
