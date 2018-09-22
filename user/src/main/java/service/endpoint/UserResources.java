@@ -67,6 +67,20 @@ public class UserResources {
         return Response.status(200).entity(this.users).type(MediaType.APPLICATION_JSON).build();
     }
 
+    @GET
+    @Path("user/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getUser(@PathParam("id") String id) {
+
+        //TODO: check if admin
+        for (User user : this.users) {
+            if (user.getId().equals(id)) {
+                return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
+            }
+        }
+        return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+    }
+
     @DELETE
     @Path("remove/{id}")
     @Produces(MediaType.APPLICATION_JSON)
