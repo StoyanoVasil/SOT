@@ -85,7 +85,6 @@ public class RoomResources {
         return Response.status(404).entity("No rooms for that landlord!").type(MediaType.TEXT_PLAIN).build();
     }
 
-
     @POST
     @Path("new")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -100,7 +99,7 @@ public class RoomResources {
                 .type(MediaType.TEXT_PLAIN).build();
     }
 
-    @PUT
+    @GET
     @Path("room/{id}/book")
     @Produces(MediaType.APPLICATION_JSON)
     public Response bookRoom(@PathParam("id") String id) {
@@ -114,7 +113,7 @@ public class RoomResources {
         return Response.status(404).entity("Room not found!").type(MediaType.TEXT_PLAIN).build();
     }
 
-    @PUT
+    @GET
     @Path("room/{id}/rent")
     @Produces(MediaType.APPLICATION_JSON)
     public Response rentRoom(@PathParam("id") String id) {

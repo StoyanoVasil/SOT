@@ -37,7 +37,7 @@ public class UserResources {
 
         if(userExists(user.getEmail()) == null) {
             this.users.add(user);
-            return Response.status(201).entity(user.createToken()).type(MediaType.APPLICATION_JSON).build();
+            return Response.status(201).entity(user.createToken()).type(MediaType.TEXT_PLAIN).build();
         }
         return Response.status(409).entity("User already exists!").type(MediaType.TEXT_PLAIN).build();
     }
