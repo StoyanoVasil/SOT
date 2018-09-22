@@ -54,6 +54,8 @@ public class RoomResources {
         return null;
     }
 
+    //TODO: add endpoint for get all available rooms
+
     @GET
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
