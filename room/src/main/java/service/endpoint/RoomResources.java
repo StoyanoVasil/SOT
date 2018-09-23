@@ -230,4 +230,26 @@ public class RoomResources {
             return Response.status(401).build();
         }
     }
+
+    @DELETE
+    @Path("rooms/{id}/delete")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteRoomsByLandlord(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            if (isAdmin(token)) {
+                List<Room> rms = new ArrayList<>();
+                for (Room room : this.rooms) {
+                    if (!room.getLandlord().equals(id)) {
+                        rms.add(room);
+                    }
+                }
+                this.rooms = rms;
+                return Response.status(204).build();
+            }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
 }

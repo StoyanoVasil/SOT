@@ -118,6 +118,24 @@ public class RentalService {
 
         try {
             verifyToken(token);
+            //get role from user service
+            Builder reqBuilder = this.client
+                    .path("role/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = reqBuilder.delete();
+
+            //if landlord delete all rooms
+            String role = r.readEntity(String.class);
+            if (role.equals("landlord")) {
+                Builder req = this.client
+                        .path("rooms/" + id + "/delete")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.delete();
+            }
+
+            //delete user
             Builder reqBuilder1 = this.client
                     .path("user/api/remove/" + id)
                     .request(MediaType.APPLICATION_JSON)

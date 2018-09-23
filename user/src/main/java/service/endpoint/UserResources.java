@@ -56,7 +56,7 @@ public class UserResources {
             this.users.add(user);
             return Response.status(201).entity(user.createToken()).type(MediaType.TEXT_PLAIN).build();
         }
-        return Response.status(409).entity("User already exists!").type(MediaType.TEXT_PLAIN).build();
+        return Response.status(409).entity("Email already in use!").type(MediaType.TEXT_PLAIN).build();
     }
 
     @POST
@@ -121,6 +121,26 @@ public class UserResources {
                     if (user.getId().equals(id)) {
                         this.users.remove(user);
                         return Response.status(204).build();
+                    }
+                }
+                return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+            }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("role/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getUserRole(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            if (isAdmin(token)) {
+                for (User user : this.users) {
+                    if (user.getId().equals(id)) {
+                        return Response.status(200).entity(user.getRole()).type(MediaType.TEXT_PLAIN).build();
                     }
                 }
                 return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
