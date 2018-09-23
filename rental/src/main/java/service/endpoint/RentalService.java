@@ -1,5 +1,11 @@
 package service.endpoint;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.glassfish.jersey.client.ClientConfig;
 import service.models.*;
 
@@ -21,9 +27,11 @@ import java.net.URI;
 public class RentalService {
 
     private WebTarget client;
+    private JWTVerifier verifier;
 
     public RentalService() {
         this.client = getClient();
+        this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
     }
 
     private WebTarget getClient() {
@@ -32,6 +40,15 @@ public class RentalService {
         Client client = ClientBuilder.newClient(new ClientConfig());
         return client.target(baseUri);
     }
+
+    private DecodedJWT verifyToken(String token) {
+
+        return verifier.verify(token);
+    }
+
+    private String getTokenId(String token) {
+
+        return verifyToken(token).getKeyId(); }
 
     // unprotected routes
     @POST
@@ -59,71 +76,126 @@ public class RentalService {
         return reqBuilder1.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
-    //TODO: include token in requests
     //protected routes
     @GET
     @Path("user/all")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUsers() {
+    public Response getUsers(@HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("user/api/all").request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("user/api/all")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).entity(e).build();
+        }
     }
 
     @GET
     @Path("user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUserById(@PathParam("id") String id) {
+    public Response getUserById(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("user/api/user/" + id).request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("user/api/user/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @DELETE
     @Path("remove/user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response removeUser(@PathParam("id") String id) {
+    public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("user/api/remove/" + id).request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.delete();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("user/api/remove/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.delete();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("room/all")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllRooms() {
+    public Response getAllRooms(@HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("room/api/all").request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/all")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomById(@PathParam("id") String id) {
+    public Response getRoomById(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("room/api/room/" + id).request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/room/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("room/city")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomByCity(@QueryParam("city") String city) {
+    public Response getRoomByCity(@QueryParam("city") String city, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("room/api/rooms").queryParam("city", city).request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/rooms")
+                    .queryParam("city", city)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("room/landlord")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomsByLandlord() {
+    public Response getRoomsByLandlord(@HeaderParam("Authorization") String token) {
 
-        //TODO: get landlord id from token
-        String id = "alomin";
-        Builder reqBuilder1 = this.client.path("room/api/rooms/landlord/" + id).request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            String id = getTokenId(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/rooms/landlord/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @POST
@@ -131,38 +203,72 @@ public class RentalService {
     @Produces(MediaType.APPLICATION_JSON)
     public Response newRoom(@FormParam("address") String address,
                             @FormParam("city") String city,
-                            @FormParam("rent") int rent) {
+                            @FormParam("rent") int rent,
+                            @HeaderParam("Authorization") String token) {
 
-        //TODO: get landlord id from token
-        Room room = new Room(address, city,"test", rent);
-        Builder reqBuilder1 = this.client.path("room/api/new").request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.post(Entity.entity(room, MediaType.APPLICATION_JSON));
+        try {
+            verifyToken(token);
+            String id = getTokenId(token);
+            Room room = new Room(address, city, id, rent);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/new")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.post(Entity.entity(room, MediaType.APPLICATION_JSON));
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("book/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response bookRoom(@PathParam("id") String id) {
+    public Response bookRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("room/api/room/" + id + "/book").request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/room/" + id + "/book")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("rent/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response rentRoom(@PathParam("id") String id) {
+    public Response rentRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("room/api/room/" + id + "/rent").request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.get();
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/room/" + id + "/rent")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @DELETE
     @Path("delete/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteRoom(@PathParam("id") String id) {
+    public Response deleteRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        Builder reqBuilder1 = this.client.path("room/api/room/" + id + "/delete").request(MediaType.APPLICATION_JSON);
-        return reqBuilder1.delete();
+
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/room/" + id + "/delete")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.delete();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 }

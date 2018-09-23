@@ -1,5 +1,10 @@
 package service.endpoint;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.glassfish.jersey.server.monitoring.ResponseStatistics;
 import service.models.User;
 
@@ -15,10 +20,22 @@ import java.util.List;
 public class UserResources {
 
     private List<User> users;
+    private JWTVerifier verifier;
 
     public UserResources() {
         this.users = new ArrayList<>();
+        this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
         this.users.add(new User("admin@ad.min", "admin", "admin", "admin"));
+    }
+
+    private boolean isAdmin(String token) {
+
+        String permission = decodeToken(token).getSubject();
+        return permission.equals("admin");
+    }
+
+    private DecodedJWT decodeToken(String token) {
+        return verifier.verify(token);
     }
 
     private User userExists(String email) {
@@ -61,38 +78,56 @@ public class UserResources {
     @GET
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUsers() {
+    public Response getUsers(@HeaderParam("Authorization") String token) {
 
-        //TODO: check if admin
-        return Response.status(200).entity(this.users).type(MediaType.APPLICATION_JSON).build();
+        try {
+            if (isAdmin(token)) {
+                return Response.status(200).entity(this.users).type(MediaType.APPLICATION_JSON).build();
+            }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
     }
 
     @GET
     @Path("user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUser(@PathParam("id") String id) {
+    public Response getUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        //TODO: check if admin
-        for (User user : this.users) {
-            if (user.getId().equals(id)) {
-                return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
+        try {
+            if (isAdmin(token)) {
+                for (User user : this.users) {
+                    if (user.getId().equals(id)) {
+                        return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
+                    }
+                }
+                return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
             }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
         }
-        return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
     }
 
     @DELETE
     @Path("remove/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response removeUser(@PathParam("id") String id) {
+    public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
-        //TODO: check if admin
-        for (User user : this.users) {
-            if (user.getId().equals(id)) {
-                this.users.remove(user);
-                return Response.status(204).build();
+        try {
+            if (isAdmin(token)) {
+                for (User user : this.users) {
+                    if (user.getId().equals(id)) {
+                        this.users.remove(user);
+                        return Response.status(204).build();
+                    }
+                }
+                return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
             }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
         }
-        return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
     }
 }
