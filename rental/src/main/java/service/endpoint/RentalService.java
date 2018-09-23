@@ -146,6 +146,23 @@ public class RentalService {
     }
 
     @GET
+    @Path("room/free")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getFreeRooms(@HeaderParam("Authorization") String token) {
+
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/free")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return reqBuilder1.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
     @Path("room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRoomById(@PathParam("id") String id, @HeaderParam("Authorization") String token) {

@@ -54,8 +54,6 @@ public class RoomResources {
         return null;
     }
 
-    //TODO: add endpoint for get all available rooms
-
     @GET
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
@@ -66,6 +64,26 @@ public class RoomResources {
                 return Response.status(200).entity(this.rooms).type(MediaType.APPLICATION_JSON).build();
             }
             return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("free")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getFreeRooms(@HeaderParam("Authorization") String token) {
+
+        try{
+            decodeToken(token);
+            List<Room> rms = new ArrayList<>();
+            for (Room room : this.rooms) {
+                if (room.getStatus().equals("free")) { rms.add(room); }
+            }
+            if (rms.size() > 0) {
+                return Response.status(200).entity(rms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return Response.status(404).entity("No free rooms").type(MediaType.TEXT_PLAIN).build();
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }

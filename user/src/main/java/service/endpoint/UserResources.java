@@ -68,7 +68,7 @@ public class UserResources {
         if (user != null){
             String token = user.authenticate(password);
             if (token != null) {
-                return Response.status(201).entity(token).type(MediaType.TEXT_PLAIN).build();
+                return Response.status(200).entity(token).type(MediaType.TEXT_PLAIN).build();
             }
             return Response.status(401).entity("Login unsuccessful!").type(MediaType.TEXT_PLAIN).build();
         }
