@@ -16,11 +16,10 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.*;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 @Singleton
 @Path("/")
@@ -48,7 +47,34 @@ public class RentalService {
 
     private String getTokenId(String token) {
 
-        return verifyToken(token).getKeyId(); }
+        return verifyToken(token).getKeyId();
+    }
+
+    private String getLandlord(Room room, String token) {
+
+        Builder req = this.client
+                .path("user/api/name/" + room.getLandlord())
+                .request(MediaType.TEXT_PLAIN)
+                .header("Authorization", token);
+        Response r = req.get();
+        if(r.getStatus() == 200) {
+            return r.readEntity(String.class);
+        }
+        return null;
+    }
+
+    private String getTenant(Room room, String token) {
+
+        Builder req = this.client
+                .path("user/api/name/" + room.getTenant())
+                .request(MediaType.TEXT_PLAIN)
+                .header("Authorization", token);
+        Response r = req.get();
+        if(r.getStatus() == 200) {
+            return r.readEntity(String.class);
+        }
+        return null;
+    }
 
     // unprotected routes
     @POST
@@ -112,7 +138,7 @@ public class RentalService {
     }
 
     @DELETE
-    @Path("remove/user/{id}")
+    @Path("delete/user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
@@ -157,7 +183,19 @@ public class RentalService {
                     .path("room/api/all")
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r =  reqBuilder1.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }

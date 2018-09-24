@@ -25,7 +25,7 @@ public class UserResources {
     public UserResources() {
         this.users = new ArrayList<>();
         this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
-        this.users.add(new User("admin@ad.min", "admin", "admin", "admin"));
+        this.users.add(new User("7f8365a9-2409-4bee-ac92-b874eeacf159", "admin@ad.min", "admin", "admin", "admin"));
     }
 
     private boolean isAdmin(String token) {
@@ -146,6 +146,24 @@ public class UserResources {
                 return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
             }
             return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("name/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response getUserName(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            decodeToken(token);
+            for (User user : this.users) {
+                if (user.getId().equals(id)) {
+                    return Response.status(200).entity(user.getName()).type(MediaType.TEXT_PLAIN).build();
+                }
+            }
+            return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }

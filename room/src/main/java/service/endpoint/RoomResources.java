@@ -25,8 +25,8 @@ public class RoomResources {
     public RoomResources() {
         rooms = new ArrayList<>();
         this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
-        rooms.add(new Room("test", "test", "alomin", 450));
-        rooms.add(new Room("tset", "test", "alomin", 450));
+        rooms.add(new Room("test", "test", "7f8365a9-2409-4bee-ac92-b874eeacf159", 450));
+        rooms.add(new Room("tset", "test", "7f8365a9-2409-4bee-ac92-b874eeacf159", 450));
     }
 
     private boolean isAdmin(String token) {
@@ -179,10 +179,10 @@ public class RoomResources {
     public Response bookRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
-            decodeToken(token);
+            DecodedJWT tkn = decodeToken(token);
             Room room = roomExists(id);
             if (room != null) {
-                room.book();
+                room.book(tkn.getKeyId());
                 return Response.status(204).build();
             }
             return Response.status(404).entity("Room not found!").type(MediaType.TEXT_PLAIN).build();
