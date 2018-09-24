@@ -252,4 +252,26 @@ public class RoomResources {
             return Response.status(401).build();
         }
     }
+
+    @GET
+    @Path("rooms/tenant/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRoomsByTenant(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            decodeToken(token);
+            List<Room> rms = new ArrayList<>();
+            for (Room room : this.rooms) {
+                if(room.getTenant().equals(id)) {
+                    rms.add(room);
+                }
+            }
+            if (rms.size() > 0) {
+                return Response.status(200).entity(rms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return Response.status(404).entity("No rooms found for this tenant!").type(MediaType.TEXT_PLAIN).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
 }
