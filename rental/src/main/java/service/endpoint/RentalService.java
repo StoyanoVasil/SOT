@@ -212,7 +212,19 @@ public class RentalService {
                     .path("room/api/free")
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r = reqBuilder1.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
