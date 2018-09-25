@@ -409,4 +409,21 @@ public class RentalService {
             return Response.status(401).build();
         }
     }
+
+    @GET
+    @Path("cancel/booking/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response opsa(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            verifyToken(token);
+            Builder req = this.client
+                    .path("room/api/room/" + id + "/book/cancel")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return req.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
 }
