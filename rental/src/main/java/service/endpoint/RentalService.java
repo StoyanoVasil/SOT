@@ -54,7 +54,7 @@ public class RentalService {
 
         Builder req = this.client
                 .path("user/api/name/" + room.getLandlord())
-                .request(MediaType.TEXT_PLAIN)
+                .request(MediaType.APPLICATION_JSON)
                 .header("Authorization", token);
         Response r = req.get();
         if(r.getStatus() == 200) {
@@ -67,7 +67,7 @@ public class RentalService {
 
         Builder req = this.client
                 .path("user/api/name/" + room.getTenant())
-                .request(MediaType.TEXT_PLAIN)
+                .request(MediaType.APPLICATION_JSON)
                 .header("Authorization", token);
         Response r = req.get();
         if(r.getStatus() == 200) {
@@ -98,7 +98,7 @@ public class RentalService {
         Form form = new Form();
         form.param("email", email);
         form.param("password", password);
-        Builder reqBuilder1 = this.client.path("user/api/authenticate").request(MediaType.TEXT_PLAIN);
+        Builder reqBuilder1 = this.client.path("user/api/authenticate").request(MediaType.APPLICATION_JSON);
         return reqBuilder1.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
@@ -364,14 +364,31 @@ public class RentalService {
     public Response bookRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
-            verifyToken(token);
-            Builder reqBuilder1 = this.client
-                    .path("room/api/room/" + id + "/book")
-                    .request(MediaType.APPLICATION_JSON)
-                    .header("Authorization", token);
-            return reqBuilder1.get();
+            DecodedJWT jwt = verifyToken(token);
+            Response r = getUserById(jwt.getKeyId(), token);
+            if (r.getStatus() == 200) {
+                User user = r.readEntity(User.class);
+                if (user.getCanBook()) {
+                    Builder reqBuilder1 = this.client
+                            .path("room/api/room/" + id + "/book")
+                            .request(MediaType.APPLICATION_JSON)
+                            .header("Authorization", token);
+                    r = reqBuilder1.get();
+                    if (r.getStatus() == 204) {
+                        user.setCanBook(false);
+                        Builder req = this.client
+                                .path("user/api/user/update")
+                                .request(MediaType.APPLICATION_JSON)
+                                .header("Authorization", token);
+                        req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+                    }
+                    return r;
+                }
+                return Response.status(401).entity("User can't book!").type(MediaType.TEXT_PLAIN).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
-            return Response.status(401).build();
+            return Response.status(401).entity("User not authorized!").type(MediaType.TEXT_PLAIN).build();
         }
     }
 
@@ -416,12 +433,22 @@ public class RentalService {
     public Response opsa(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
-            verifyToken(token);
+            DecodedJWT jwt = verifyToken(token);
             Builder req = this.client
                     .path("room/api/room/" + id + "/book/cancel")
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return req.get();
+            Response r = req.get();
+            if (r.getStatus() == 204) {
+                User user = getUserById(jwt.getKeyId(), token).readEntity(User.class);
+                user.setCanBook(true);
+                req = this.client
+                        .path("user/api/user/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }

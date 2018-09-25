@@ -14,6 +14,7 @@ public class User {
     private String name;
     private String password;
     private String role;
+    private boolean canBook;
 
     public User() {
     }
@@ -24,6 +25,7 @@ public class User {
         this.name = name;
         this.password = password;
         this.role = role;
+        this.canBook = true;
     }
 
     public User(String id, String email, String name, String password, String role) {
@@ -32,6 +34,7 @@ public class User {
         this.name = name;
         this.password = password;
         this.role = role;
+        this.canBook = true;
     }
 
     public String getId() {
@@ -74,6 +77,14 @@ public class User {
         this.role = role;
     }
 
+    public boolean getCanBook() {
+        return canBook;
+    }
+
+    public void setCanBook(boolean canBook) {
+        this.canBook = canBook;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -91,6 +102,7 @@ public class User {
                 "',email='" + this.email +
                 "',password='" + this.password +
                 "',name='" + this.email +
+                "',canBook='" + this.canBook +
                 "',role='" + this.role + "'}";
     }
 
