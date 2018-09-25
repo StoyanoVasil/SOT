@@ -306,4 +306,24 @@ public class RoomResources {
             return Response.status(401).build();
         }
     }
+
+    @GET
+    @Path("rooms/{id}/update")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateRooms(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            if (isAdmin(token)) {
+                for (Room room : this.rooms) {
+                    if (room.getTenant().equals(id)) {
+                        room.cancelBooking();
+                    }
+                }
+                return Response.status(201).build();
+            }
+            return Response.status(401).build();
+        } catch (JWTDecodeException e) {
+            return Response.status(401).build();
+        }
+    }
 }

@@ -83,11 +83,13 @@ public class RentalService {
     public Response register(@FormParam("email") String email, @FormParam("name") String name,
                              @FormParam("role") String role, @FormParam("password") String password) {
 
-        //TODO: check if role is either landlord or student
-        Builder reqBuilder1 = this.client.path("user/api/register")
-                .request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON);
-        return reqBuilder1.post(Entity.entity(new User(email, name, password, role),
-                MediaType.APPLICATION_JSON));
+        if (role.equals("student") || role.equals("landlord")) {
+            Builder reqBuilder1 = this.client.path("user/api/register")
+                    .request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON);
+            return reqBuilder1.post(Entity.entity(new User(email, name, password, role),
+                    MediaType.APPLICATION_JSON));
+        }
+        return Response.status(422).build();
     }
 
     @POST
@@ -146,22 +148,26 @@ public class RentalService {
             verifyToken(token);
             //get role from user service
             Builder reqBuilder = this.client
-                    .path("role/" + id)
+                    .path("user/api/role/" + id)
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            Response r = reqBuilder.delete();
+            Response r = reqBuilder.get();
 
-            //if landlord delete all rooms
+            //if landlord delete all rooms, if user remove all bookings/rents and free rooms
             String role = r.readEntity(String.class);
             if (role.equals("landlord")) {
                 Builder req = this.client
-                        .path("rooms/" + id + "/delete")
+                        .path("room/api/rooms/" + id + "/delete")
                         .request(MediaType.APPLICATION_JSON)
                         .header("Authorization", token);
                 req.delete();
+            } else if (role.equals("student")) {
+                Builder req = this.client
+                        .path("room/api/rooms/" + id + "/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.get();
             }
-
-            //TODO: if user remove all bookings
 
             //delete user
             Builder reqBuilder1 = this.client
@@ -449,6 +455,31 @@ public class RentalService {
                         .request(MediaType.APPLICATION_JSON)
                         .header("Authorization", token);
                 req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+            }
+            return r;
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    private Response getRoomsByTenantId(String id, String token) {
+
+        try {
+            Builder req = this.client
+                    .path("room/api/rooms/tenant/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = req.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
             }
             return r;
         } catch (JWTVerificationException e) {
