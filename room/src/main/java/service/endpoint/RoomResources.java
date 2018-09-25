@@ -197,17 +197,17 @@ public class RoomResources {
     public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
-            DecodedJWT tkn = decodeToken(token);
+            DecodedJWT jwt = decodeToken(token);
             Room room = roomExists(id);
-            String tknId = tkn.getKeyId();
+            String tknId = jwt.getKeyId();
             if (room != null) {
-                if (tknId.equals(room.getLandlord()) || tknId.equals(room.getTenant())) {
+                if (room.getLandlord().equals(tknId) || room.getTenant().equals(tknId)) {
                     room.cancelBooking();
                     return Response.status(204).build();
                 }
                 return Response.status(401).build();
             }
-            return Response.status(404).entity("Room not found!").type(MediaType.TEXT_PLAIN).build();
+            return Response.status(400).entity("Room not found!").type(MediaType.TEXT_PLAIN).build();
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
