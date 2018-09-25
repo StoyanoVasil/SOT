@@ -46,7 +46,7 @@ public class RoomResources {
 
     private Room roomExists(String id) {
 
-        for (Room room : rooms) {
+        for (Room room : this.rooms) {
             if (room.getId().equals(id)) {
                 return room;
             }
@@ -184,6 +184,28 @@ public class RoomResources {
             if (room != null) {
                 room.book(tkn.getKeyId());
                 return Response.status(204).build();
+            }
+            return Response.status(404).entity("Room not found!").type(MediaType.TEXT_PLAIN).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("room/{id}/book/cancel")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            DecodedJWT tkn = decodeToken(token);
+            Room room = roomExists(id);
+            String tknId = tkn.getKeyId();
+            if (room != null) {
+                if (tknId.equals(room.getLandlord()) || tknId.equals(room.getTenant())) {
+                    room.cancelBooking();
+                    return Response.status(204).build();
+                }
+                return Response.status(401).build();
             }
             return Response.status(404).entity("Room not found!").type(MediaType.TEXT_PLAIN).build();
         } catch (JWTVerificationException e) {

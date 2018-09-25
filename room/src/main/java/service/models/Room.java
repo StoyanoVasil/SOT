@@ -99,6 +99,11 @@ public class Room {
         setTenant(tenant);
     }
 
+    public void cancelBooking() {
+        setStatus("free");
+        setTenant("");
+    }
+
     public void rent() {
         setStatus("rented");
     }

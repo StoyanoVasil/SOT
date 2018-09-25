@@ -376,6 +376,23 @@ public class RentalService {
     }
 
     @GET
+    @Path("cancel/booking/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            verifyToken(token);
+            Builder req = this.client
+                    .path("room/" + id + "/book/cancel")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            return req.get();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
     @Path("rent/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response rentRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
