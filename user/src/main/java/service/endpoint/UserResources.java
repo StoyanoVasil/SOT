@@ -25,7 +25,10 @@ public class UserResources {
     public UserResources() {
         this.users = new ArrayList<>();
         this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
-        this.users.add(new User("7f8365a9-2409-4bee-ac92-b874eeacf159", "admin@ad.min", "admin", "admin", "admin"));
+        this.users.add(new User("7f8365a9-2409-4bee-ac92-b874eeacf159", "tom@ad.min", "Tom", "password", "admin"));
+        this.users.add(new User("b26c04c2-cd5b-4337-a6ed-cb7bcfe790a5", "franz@gmail.com", "Franz", "moremoney", "landlord"));
+        this.users.add(new User("5ab557a7-98bd-45a9-b6ba-7a8173fd64c3", "luuk@gmail.com", "Luuk", "greedyaf", "landlord"));
+        this.users.add(new User("b0e50136-ad54-4737-ab36-a7bb998ac7e3", "john@gmail.com", "John", "pooraf", "student"));
     }
 
     private boolean isAdmin(String token) {

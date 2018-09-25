@@ -25,8 +25,13 @@ public class RoomResources {
     public RoomResources() {
         rooms = new ArrayList<>();
         this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
-        rooms.add(new Room("test", "test", "7f8365a9-2409-4bee-ac92-b874eeacf159", 450));
-        rooms.add(new Room("tset", "test", "7f8365a9-2409-4bee-ac92-b874eeacf159", 450));
+        rooms.add(new Room("d7947ed9-9e39-49ec-9930-4a6a24c46105","Drijffhoutstraat 27", "Eindhoven", "7f8365a9-2409-4bee-ac92-b874eeacf159", 400));
+        rooms.add(new Room("ff26d1d1-3ce5-4694-b564-6eb7ec391090","Anjeliersstraat 118", "Amsterdam", "7f8365a9-2409-4bee-ac92-b874eeacf159", 750));
+        rooms.add(new Room("b085ba9a-d4c1-4575-a579-d90378910642","Paul Citroenstraat 13", "Utrecht", "b26c04c2-cd5b-4337-a6ed-cb7bcfe790a5", 600));
+        rooms.add(new Room("22122569-a73d-437a-8b84-af3b22532c23","Jan van Goyenstraat 28", "Eindhoven", "b26c04c2-cd5b-4337-a6ed-cb7bcfe790a5", 500));
+        rooms.add(new Room("5b9f33c7-cb90-46e3-b420-3bed4795ba54","Pijlstaartvlinder 22", "Utrecht", "5ab557a7-98bd-45a9-b6ba-7a8173fd64c3", 850));
+        rooms.add(new Room("de8ba56c-66bb-49e5-8a20-3e8c98a6bd10","1e Delistraat 11", "Utrecht", "5ab557a7-98bd-45a9-b6ba-7a8173fd64c3", 900));
+        rooms.add(new Room("5f90965d-2a2d-48ae-b037-0eed7b9b838d","Potgieterstraat 33", "Amsterdam", "5ab557a7-98bd-45a9-b6ba-7a8173fd64c3", 1050));
     }
 
     private boolean isAdmin(String token) {

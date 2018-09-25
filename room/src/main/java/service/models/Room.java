@@ -26,6 +26,16 @@ public class Room {
         this.tenant = "";
     }
 
+    public Room(String uuid, String address, String city, String landlord, int rent) {
+        this.id = uuid;
+        this.address = address;
+        this.city = city;
+        this.landlord = landlord;
+        this.rent = rent;
+        this.status = "free";
+        this.tenant = "";
+    }
+
     public String getId() { return id; }
 
     public void setId(String id) { this.id = id; }
