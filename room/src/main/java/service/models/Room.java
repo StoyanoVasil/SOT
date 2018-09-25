@@ -95,8 +95,10 @@ public class Room {
     }
 
     public void book(String tenant) {
-        setStatus("booked");
-        setTenant(tenant);
+        if (this.status.equals("free")) {
+            setStatus("booked");
+            setTenant(tenant);
+        }
     }
 
     public void cancelBooking() {

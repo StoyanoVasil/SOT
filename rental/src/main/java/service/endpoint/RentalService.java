@@ -161,6 +161,8 @@ public class RentalService {
                 req.delete();
             }
 
+            //TODO: if user remove all bookings
+
             //delete user
             Builder reqBuilder1 = this.client
                     .path("user/api/remove/" + id)

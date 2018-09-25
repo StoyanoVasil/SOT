@@ -54,6 +54,16 @@ public class RoomResources {
         return null;
     }
 
+    private Room roomExistsAddress(String address) {
+
+        for (Room room : this.rooms) {
+            if (room.getAddress().equals(address)) {
+                return room;
+            }
+        }
+        return null;
+    }
+
     @GET
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
@@ -160,7 +170,7 @@ public class RoomResources {
 
         try {
             if (isLandlord(token)) {
-                if (roomExists(room.getAddress()) == null) {
+                if (roomExistsAddress(room.getAddress()) == null) {
                     rooms.add(room);
                     return Response.status(201).entity("Room posted!").type(MediaType.TEXT_PLAIN).build();
                 }
