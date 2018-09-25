@@ -438,7 +438,7 @@ public class RentalService {
     @GET
     @Path("cancel/booking/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response opsa(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
             DecodedJWT jwt = verifyToken(token);
