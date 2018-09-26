@@ -411,7 +411,18 @@ public class RentalService {
                     .path("room/api/room/" + id + "/rent")
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r = reqBuilder1.get();
+            if (r.getStatus() == 204) {
+                Room room = getRoomById(id, token).readEntity(Room.class);
+                User user = getUserById(room.getTenant(), token).readEntity(User.class);
+                user.setCanBook(true);
+                Builder req = this.client
+                        .path("user/api/user/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }

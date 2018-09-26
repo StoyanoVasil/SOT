@@ -185,9 +185,12 @@ public class UserResources {
         try {
             decodeToken(token);
             User usr = userExists(user.getId());
-            this.users.remove(usr);
-            this.users.add(user);
-            return Response.status(204).build();
+            if (usr != null) {
+                this.users.remove(usr);
+                this.users.add(user);
+                return Response.status(204).build();
+            }
+            return Response.status(401).build();
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
