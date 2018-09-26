@@ -25,7 +25,10 @@ public class UserResources {
     public UserResources() {
         this.users = new ArrayList<>();
         this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
-        this.users.add(new User("admin@ad.min", "admin", "admin", "admin"));
+        this.users.add(new User("7f8365a9-2409-4bee-ac92-b874eeacf159", "tom@ad.min", "Tom", "password", "admin"));
+        this.users.add(new User("b26c04c2-cd5b-4337-a6ed-cb7bcfe790a5", "franz@gmail.com", "Franz", "moremoney", "landlord"));
+        this.users.add(new User("5ab557a7-98bd-45a9-b6ba-7a8173fd64c3", "luuk@gmail.com", "Luuk", "greedyaf", "landlord"));
+        this.users.add(new User("b0e50136-ad54-4737-ab36-a7bb998ac7e3", "john@gmail.com", "John", "pooraf", "student"));
     }
 
     private boolean isAdmin(String token) {
@@ -38,7 +41,15 @@ public class UserResources {
         return verifier.verify(token);
     }
 
-    private User userExists(String email) {
+    private User userExists(String id) {
+
+        for (User user : users) {
+            if (user.getId().equals(id)) { return user; }
+        }
+        return null;
+    }
+
+    private User userExistsEmail(String email) {
 
         for (User user : users) {
             if (user.getEmail().equals(email)) { return user; }
@@ -52,27 +63,27 @@ public class UserResources {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response register(User user) {
 
-        if(userExists(user.getEmail()) == null) {
+        if(userExistsEmail(user.getEmail()) == null) {
             this.users.add(user);
             return Response.status(201).entity(user.createToken()).type(MediaType.TEXT_PLAIN).build();
         }
-        return Response.status(409).entity("User already exists!").type(MediaType.TEXT_PLAIN).build();
+        return Response.status(409).entity("Email already in use!").type(MediaType.TEXT_PLAIN).build();
     }
 
     @POST
     @Path("authenticate")
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getToken(@FormParam("email") String email, @FormParam("password") String password) {
 
-        User user = userExists(email);
-        if (user != null){
+        User user = userExistsEmail(email);
+        if(user != null) {
             String token = user.authenticate(password);
             if (token != null) {
-                return Response.status(201).entity(token).type(MediaType.TEXT_PLAIN).build();
+                return Response.status(200).entity(token).type(MediaType.TEXT_PLAIN).build();
             }
             return Response.status(401).entity("Login unsuccessful!").type(MediaType.TEXT_PLAIN).build();
         }
-        return Response.status(401).entity("No user with that email!").type(MediaType.TEXT_PLAIN).build();
+        return Response.status(404).entity("No user with that email!").type(MediaType.TEXT_PLAIN).build();
     }
 
     @GET
@@ -96,13 +107,12 @@ public class UserResources {
     public Response getUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
-            if (isAdmin(token)) {
-                for (User user : this.users) {
-                    if (user.getId().equals(id)) {
-                        return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
-                    }
+            DecodedJWT jwt = decodeToken(token);
+            User user = userExists(id);
+            if (user != null) {
+                if (isAdmin(token) || user.getId().equals(jwt.getKeyId())) {
+                    return Response.status(200).entity(user).type(MediaType.APPLICATION_JSON).build();
                 }
-                return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
             }
             return Response.status(401).build();
         } catch (JWTVerificationException e) {
@@ -117,13 +127,68 @@ public class UserResources {
 
         try {
             if (isAdmin(token)) {
-                for (User user : this.users) {
-                    if (user.getId().equals(id)) {
-                        this.users.remove(user);
-                        return Response.status(204).build();
-                    }
+                User user = userExists(id);
+                if (user != null) {
+                    this.users.remove(user);
+                    return Response.status(204).build();
                 }
                 return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+            }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("role/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getUserRole(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            if (isAdmin(token)) {
+                User user = userExists(id);
+                if (user != null) {
+                    return Response.status(200).entity(user.getRole()).type(MediaType.TEXT_PLAIN).build();
+                }
+                return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+            }
+            return Response.status(401).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("name/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getUserName(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            decodeToken(token);
+            User user = userExists(id);
+            if (user != null) {
+                return Response.status(200).entity(user.getName()).type(MediaType.TEXT_PLAIN).build();
+            }
+            return Response.status(404).entity("User not found!").type(MediaType.TEXT_PLAIN).build();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @PUT
+    @Path("user/update")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response updateUser(User user, @HeaderParam("Authorization") String token) {
+
+        try {
+            decodeToken(token);
+            User usr = userExists(user.getId());
+            if (usr != null) {
+                this.users.remove(usr);
+                this.users.add(user);
+                return Response.status(204).build();
             }
             return Response.status(401).build();
         } catch (JWTVerificationException e) {

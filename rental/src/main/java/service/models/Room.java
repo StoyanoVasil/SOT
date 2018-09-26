@@ -11,6 +11,7 @@ public class Room {
     private String landlord;
     private int rent;
     private String status;
+    private String tenant;
 
     public Room() {
     }
@@ -22,6 +23,7 @@ public class Room {
         this.landlord = landlord;
         this.rent = rent;
         this.status = "free";
+        this.tenant = "";
     }
 
     public String getId() { return id; }
@@ -62,6 +64,14 @@ public class Room {
         this.status = status;
     }
 
+    public String getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(String tenant) {
+        this.tenant = tenant;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -80,11 +90,20 @@ public class Room {
                 "',landlord='" + this.landlord +
                 "',rent='" + this.rent +
                 "',id='" + this.id+
+                "',tenant='" + this.tenant+
                 "',status='" + this.status + "'}";
     }
 
-    public void book() {
-        setStatus("booked");
+    public void book(String tenant) {
+        if (this.status.equals("free")) {
+            setStatus("booked");
+            setTenant(tenant);
+        }
+    }
+
+    public void cancelBooking() {
+        setStatus("free");
+        setTenant("");
     }
 
     public void rent() {

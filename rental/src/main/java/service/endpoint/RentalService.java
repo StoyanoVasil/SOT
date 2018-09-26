@@ -16,11 +16,10 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.*;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 @Singleton
 @Path("/")
@@ -48,7 +47,34 @@ public class RentalService {
 
     private String getTokenId(String token) {
 
-        return verifyToken(token).getKeyId(); }
+        return verifyToken(token).getKeyId();
+    }
+
+    private String getLandlord(Room room, String token) {
+
+        Builder req = this.client
+                .path("user/api/name/" + room.getLandlord())
+                .request(MediaType.APPLICATION_JSON)
+                .header("Authorization", token);
+        Response r = req.get();
+        if(r.getStatus() == 200) {
+            return r.readEntity(String.class);
+        }
+        return null;
+    }
+
+    private String getTenant(Room room, String token) {
+
+        Builder req = this.client
+                .path("user/api/name/" + room.getTenant())
+                .request(MediaType.APPLICATION_JSON)
+                .header("Authorization", token);
+        Response r = req.get();
+        if(r.getStatus() == 200) {
+            return r.readEntity(String.class);
+        }
+        return null;
+    }
 
     // unprotected routes
     @POST
@@ -57,11 +83,13 @@ public class RentalService {
     public Response register(@FormParam("email") String email, @FormParam("name") String name,
                              @FormParam("role") String role, @FormParam("password") String password) {
 
-        //TODO: check if role is either landlord or student
-        Builder reqBuilder1 = this.client.path("user/api/register")
-                .request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON);
-        return reqBuilder1.post(Entity.entity(new User(email, name, password, role),
-                MediaType.APPLICATION_JSON));
+        if (role.equals("student") || role.equals("landlord")) {
+            Builder reqBuilder1 = this.client.path("user/api/register")
+                    .request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON);
+            return reqBuilder1.post(Entity.entity(new User(email, name, password, role),
+                    MediaType.APPLICATION_JSON));
+        }
+        return Response.status(422).build();
     }
 
     @POST
@@ -72,7 +100,7 @@ public class RentalService {
         Form form = new Form();
         form.param("email", email);
         form.param("password", password);
-        Builder reqBuilder1 = this.client.path("user/api/authenticate").request(MediaType.TEXT_PLAIN);
+        Builder reqBuilder1 = this.client.path("user/api/authenticate").request(MediaType.APPLICATION_JSON);
         return reqBuilder1.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
@@ -112,12 +140,36 @@ public class RentalService {
     }
 
     @DELETE
-    @Path("remove/user/{id}")
+    @Path("delete/user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
             verifyToken(token);
+            //get role from user service
+            Builder reqBuilder = this.client
+                    .path("user/api/role/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = reqBuilder.get();
+
+            //if landlord delete all rooms, if user remove all bookings/rents and free rooms
+            String role = r.readEntity(String.class);
+            if (role.equals("landlord")) {
+                Builder req = this.client
+                        .path("room/api/rooms/" + id + "/delete")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.delete();
+            } else if (role.equals("student")) {
+                Builder req = this.client
+                        .path("room/api/rooms/" + id + "/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.get();
+            }
+
+            //delete user
             Builder reqBuilder1 = this.client
                     .path("user/api/remove/" + id)
                     .request(MediaType.APPLICATION_JSON)
@@ -139,7 +191,48 @@ public class RentalService {
                     .path("room/api/all")
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r =  reqBuilder1.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("room/free")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getFreeRooms(@HeaderParam("Authorization") String token) {
+
+        try {
+            verifyToken(token);
+            Builder reqBuilder1 = this.client
+                    .path("room/api/free")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = reqBuilder1.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
@@ -174,7 +267,19 @@ public class RentalService {
                     .queryParam("city", city)
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r = reqBuilder1.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
@@ -188,11 +293,52 @@ public class RentalService {
         try {
             verifyToken(token);
             String id = getTokenId(token);
-            Builder reqBuilder1 = this.client
+            Builder req = this.client
                     .path("room/api/rooms/landlord/" + id)
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r = req.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("room/tenant")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRoomsByTenant(@HeaderParam("Authorization") String token) {
+
+        try {
+            String id = getTokenId(token);
+            Builder req = this.client
+                    .path("room/api/rooms/tenant/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = req.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
@@ -226,14 +372,31 @@ public class RentalService {
     public Response bookRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
 
         try {
-            verifyToken(token);
-            Builder reqBuilder1 = this.client
-                    .path("room/api/room/" + id + "/book")
-                    .request(MediaType.APPLICATION_JSON)
-                    .header("Authorization", token);
-            return reqBuilder1.get();
+            DecodedJWT jwt = verifyToken(token);
+            Response r = getUserById(jwt.getKeyId(), token);
+            if (r.getStatus() == 200) {
+                User user = r.readEntity(User.class);
+                if (user.getCanBook()) {
+                    Builder reqBuilder1 = this.client
+                            .path("room/api/room/" + id + "/book")
+                            .request(MediaType.APPLICATION_JSON)
+                            .header("Authorization", token);
+                    r = reqBuilder1.get();
+                    if (r.getStatus() == 204) {
+                        user.setCanBook(false);
+                        Builder req = this.client
+                                .path("user/api/user/update")
+                                .request(MediaType.APPLICATION_JSON)
+                                .header("Authorization", token);
+                        req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+                    }
+                    return r;
+                }
+                return Response.status(401).entity("User can't book!").type(MediaType.TEXT_PLAIN).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
-            return Response.status(401).build();
+            return Response.status(401).entity("User not authorized!").type(MediaType.TEXT_PLAIN).build();
         }
     }
 
@@ -248,7 +411,18 @@ public class RentalService {
                     .path("room/api/room/" + id + "/rent")
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
-            return reqBuilder1.get();
+            Response r = reqBuilder1.get();
+            if (r.getStatus() == 204) {
+                Room room = getRoomById(id, token).readEntity(Room.class);
+                User user = getUserById(room.getTenant(), token).readEntity(User.class);
+                user.setCanBook(true);
+                Builder req = this.client
+                        .path("user/api/user/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
@@ -267,6 +441,58 @@ public class RentalService {
                     .request(MediaType.APPLICATION_JSON)
                     .header("Authorization", token);
             return reqBuilder1.delete();
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    @GET
+    @Path("cancel/booking/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+
+        try {
+            DecodedJWT jwt = verifyToken(token);
+            Builder req = this.client
+                    .path("room/api/room/" + id + "/book/cancel")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = req.get();
+            if (r.getStatus() == 204) {
+                User user = getUserById(jwt.getKeyId(), token).readEntity(User.class);
+                user.setCanBook(true);
+                req = this.client
+                        .path("user/api/user/update")
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token);
+                req.put(Entity.entity(user, MediaType.APPLICATION_JSON));
+            }
+            return r;
+        } catch (JWTVerificationException e) {
+            return Response.status(401).build();
+        }
+    }
+
+    private Response getRoomsByTenantId(String id, String token) {
+
+        try {
+            Builder req = this.client
+                    .path("room/api/rooms/tenant/" + id)
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token);
+            Response r = req.get();
+            if (r.getStatus() == 200) {
+                GenericType<ArrayList<Room>> ent = new GenericType<>() {};
+                List<Room> rooms = r.readEntity(ent);
+                for (Room room : rooms) {
+                    String landlord = getLandlord(room, token);
+                    String tenant = getTenant(room, token);
+                    room.setLandlord(landlord);
+                    room.setTenant(tenant);
+                }
+                return Response.status(200).entity(rooms).type(MediaType.APPLICATION_JSON).build();
+            }
+            return r;
         } catch (JWTVerificationException e) {
             return Response.status(401).build();
         }
