@@ -27,17 +27,28 @@ public class RentalService {
 
     private WebTarget client;
     private JWTVerifier verifier;
+    private String test;
 
     public RentalService() {
-        this.client = getClient();
+        this.client = null;
         this.verifier = JWT.require(Algorithm.HMAC256("rest_sot_assignment")).build();
     }
 
-    private WebTarget getClient() {
+    private void setClient(UriInfo uri) {
 
-        URI baseUri = UriBuilder.fromUri("http://localhost:8080/").build();
-        Client client = ClientBuilder.newClient(new ClientConfig());
-        return client.target(baseUri);
+        if (this.client == null) {
+            String u = getUriBase(uri.getBaseUri().toString());
+            URI baseUri = UriBuilder.fromUri(u).build();
+            Client client = ClientBuilder.newClient(new ClientConfig());
+            this.client = client.target(baseUri);
+        }
+    }
+
+    private String getUriBase(String uri) {
+
+        String[] parts = uri.split(":");
+        String port = parts[2].split("/")[0];
+        return parts[0] + ":" + parts[1] + ":" + port + "/";
     }
 
     private DecodedJWT verifyToken(String token) {
@@ -81,8 +92,10 @@ public class RentalService {
     @Path("new/user")
     @Produces(MediaType.APPLICATION_JSON)
     public Response register(@FormParam("email") String email, @FormParam("name") String name,
-                             @FormParam("role") String role, @FormParam("password") String password) {
+                             @FormParam("role") String role, @FormParam("password") String password,
+                             @Context UriInfo uri) {
 
+        setClient(uri);
         if (role.equals("student") || role.equals("landlord")) {
             Builder reqBuilder1 = this.client.path("user/api/register")
                     .request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON);
@@ -95,8 +108,10 @@ public class RentalService {
     @POST
     @Path("user/authenticate")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response authenticate(@FormParam("email") String email, @FormParam("password") String password) {
+    public Response authenticate(@FormParam("email") String email, @FormParam("password") String password,
+                                 @Context UriInfo uri) {
 
+        setClient(uri);
         Form form = new Form();
         form.param("email", email);
         form.param("password", password);
@@ -108,8 +123,9 @@ public class RentalService {
     @GET
     @Path("user/all")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUsers(@HeaderParam("Authorization") String token) {
+    public Response getUsers(@HeaderParam("Authorization") String token, @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -125,8 +141,10 @@ public class RentalService {
     @GET
     @Path("user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getUserById(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response getUserById(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                                @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -142,8 +160,10 @@ public class RentalService {
     @DELETE
     @Path("delete/user/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response removeUser(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                               @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             //get role from user service
@@ -183,8 +203,9 @@ public class RentalService {
     @GET
     @Path("room/all")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllRooms(@HeaderParam("Authorization") String token) {
+    public Response getAllRooms(@HeaderParam("Authorization") String token, @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -212,8 +233,9 @@ public class RentalService {
     @GET
     @Path("room/free")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getFreeRooms(@HeaderParam("Authorization") String token) {
+    public Response getFreeRooms(@HeaderParam("Authorization") String token, @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -241,8 +263,10 @@ public class RentalService {
     @GET
     @Path("room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomById(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response getRoomById(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                                @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -258,8 +282,10 @@ public class RentalService {
     @GET
     @Path("room/city")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomByCity(@QueryParam("city") String city, @HeaderParam("Authorization") String token) {
+    public Response getRoomByCity(@QueryParam("city") String city, @HeaderParam("Authorization") String token,
+                                  @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -288,8 +314,9 @@ public class RentalService {
     @GET
     @Path("room/landlord")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomsByLandlord(@HeaderParam("Authorization") String token) {
+    public Response getRoomsByLandlord(@HeaderParam("Authorization") String token, @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             String id = getTokenId(token);
@@ -318,8 +345,9 @@ public class RentalService {
     @GET
     @Path("room/tenant")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getRoomsByTenant(@HeaderParam("Authorization") String token) {
+    public Response getRoomsByTenant(@HeaderParam("Authorization") String token, @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             String id = getTokenId(token);
             Builder req = this.client
@@ -350,8 +378,10 @@ public class RentalService {
     public Response newRoom(@FormParam("address") String address,
                             @FormParam("city") String city,
                             @FormParam("rent") int rent,
-                            @HeaderParam("Authorization") String token) {
+                            @HeaderParam("Authorization") String token,
+                            @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             String id = getTokenId(token);
@@ -369,11 +399,13 @@ public class RentalService {
     @GET
     @Path("book/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response bookRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response bookRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                             @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             DecodedJWT jwt = verifyToken(token);
-            Response r = getUserById(jwt.getKeyId(), token);
+            Response r = getUserById(jwt.getKeyId(), token, uri);
             if (r.getStatus() == 200) {
                 User user = r.readEntity(User.class);
                 if (user.getCanBook()) {
@@ -403,8 +435,10 @@ public class RentalService {
     @GET
     @Path("rent/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response rentRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response rentRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                             @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -413,8 +447,8 @@ public class RentalService {
                     .header("Authorization", token);
             Response r = reqBuilder1.get();
             if (r.getStatus() == 204) {
-                Room room = getRoomById(id, token).readEntity(Room.class);
-                User user = getUserById(room.getTenant(), token).readEntity(User.class);
+                Room room = getRoomById(id, token, uri).readEntity(Room.class);
+                User user = getUserById(room.getTenant(), token, uri).readEntity(User.class);
                 user.setCanBook(true);
                 Builder req = this.client
                         .path("user/api/user/update")
@@ -431,9 +465,10 @@ public class RentalService {
     @DELETE
     @Path("delete/room/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response deleteRoom(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                               @Context UriInfo uri) {
 
-
+        setClient(uri);
         try {
             verifyToken(token);
             Builder reqBuilder1 = this.client
@@ -449,8 +484,10 @@ public class RentalService {
     @GET
     @Path("cancel/booking/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token) {
+    public Response cancelBooking(@PathParam("id") String id, @HeaderParam("Authorization") String token,
+                                  @Context UriInfo uri) {
 
+        setClient(uri);
         try {
             DecodedJWT jwt = verifyToken(token);
             Builder req = this.client
@@ -459,7 +496,7 @@ public class RentalService {
                     .header("Authorization", token);
             Response r = req.get();
             if (r.getStatus() == 204) {
-                User user = getUserById(jwt.getKeyId(), token).readEntity(User.class);
+                User user = getUserById(jwt.getKeyId(), token, uri).readEntity(User.class);
                 user.setCanBook(true);
                 req = this.client
                         .path("user/api/user/update")
@@ -473,8 +510,9 @@ public class RentalService {
         }
     }
 
-    private Response getRoomsByTenantId(String id, String token) {
+    private Response getRoomsByTenantId(String id, String token, UriInfo uri) {
 
+        setClient(uri);
         try {
             Builder req = this.client
                     .path("room/api/rooms/tenant/" + id)
